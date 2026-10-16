@@ -1,45 +1,48 @@
 # Exploratory Data Analysis with SQL and Python
 
-A data exploration project using Python to load a paintings dataset into MySQL and SQL to investigate data quality, museum collections, artists, artwork pricing, opening hours, and painting styles.
+A data exploration project that loads a paintings dataset into MySQL with Python, then uses SQL to investigate collection coverage, data quality, museum operations, artists, artwork pricing, and painting styles.
 
 ## Project overview
 
-This project combines a Python ingestion script with SQL queries. The Python script uses **pandas** and **SQLAlchemy** to load eight CSV tables into a MySQL database named `paintings`. The `EDA.sql` file explores the relational data to answer questions about the collection and identify potential data-quality issues.
+The project combines a Python data-loading script with an annotated SQL analysis file. The loader uses **pandas** and **SQLAlchemy** to import eight CSV files into a MySQL database named `paintings`. The `EDA.sql` file explores the resulting relational tables.
 
 ## Tools and technologies
 
-- **Python**
-- **pandas** — read CSV files into DataFrames
-- **SQLAlchemy** — connect to MySQL and write tables
-- **MySQL** — store and query the relational dataset
-- **SQL** — joins, aggregation, subqueries, common table expressions (CTEs), window functions, and data-quality checks
+- **Python** — ingestion workflow
+- **pandas** — reading and preparing CSV data
+- **SQLAlchemy** — database connection and table loading
+- **MySQL** — relational storage and querying
+- **SQL** — joins, aggregation, subqueries, CTEs, window functions, and data-quality checks
 
 ## Analysis covered
 
 - **Collection coverage:** artworks without an assigned museum and museums with no recorded paintings.
-- **Pricing checks:** artworks whose sale price exceeds the regular price, deep discounts, and the most/least expensive recorded works.
+- **Pricing checks:** sale prices above regular prices, unusually deep discounts, and the most/least expensive recorded works.
 - **Data quality:** museum records with missing or numeric-only city values, and invalid or incomplete museum opening hours.
 - **Museum operations:** museums open on selected days, museums open all seven days, and the museum with the longest total opening hours.
 - **Artists and artworks:** frequently represented artists, painting subjects, popular styles, and artists whose works are represented across multiple countries.
-- **Ranking and advanced analysis:** least-used canvas sizes, ranked countries by painting count, and CTE/window-function queries to identify leading combinations of style and museum.
+- **Ranking and advanced analysis:** less common canvas sizes, ranked countries by painting count, and CTE/window-function queries involving museum and style rankings.
 
 ## Repository files
 
-- `EDA.sql` — annotated SQL queries for exploration and analysis.
-- `creatin tables and loading data into sql.py` — Python script that reads eight CSV files and loads them into MySQL.
+- `EDA.sql` — SQL queries for exploration and analysis.
+- `load_paintings_data.py` — Python script that loads the CSV files into MySQL.
+- `archive/` — expected location of the source CSV files (the data files are not necessarily included in the repository).
 
-The loading script expects the following CSV files: `artist`, `canvas_size`, `image_link`, `museum_hours`, `museum`, `product_size`, `subject`, and `work`.
+The loader expects eight files: `artist.csv`, `canvas_size.csv`, `image_link.csv`, `museum_hours.csv`, `museum.csv`, `product_size.csv`, `subject.csv`, and `work.csv`.
 
 ## Getting started
 
 ### Prerequisites
 
-- Python 3
+- Python 3.9 or newer
 - MySQL Server
 - The paintings dataset CSV files
 - A SQL client such as MySQL Workbench
 
 ### 1. Install dependencies
+
+From the repository directory, run:
 
 ```bash
 pip install pandas sqlalchemy pymysql
@@ -47,32 +50,49 @@ pip install pandas sqlalchemy pymysql
 
 ### 2. Create the database
 
+Create the database in MySQL before loading the data:
+
 ```sql
 CREATE DATABASE paintings;
 ```
 
-### 3. Configure the loader
+Use a dedicated database user with only the privileges required for this project. The loader replaces tables with matching names, so do not point it at a database containing data you need to preserve.
 
-Before running the Python script, update the connection URL and CSV file paths for your environment. The current script uses local Windows paths and contains a local database username/password. Replace these values with your own, and do not commit credentials to source control.
+### 3. Configure the environment
 
-A connection URL will generally look like this:
+The loader reads connection details from environment variables, not from hard-coded credentials in the Python file.
 
-```python
-from sqlalchemy import create_engine
+**Windows PowerShell:**
 
-# Example placeholder only; use environment variables for credentials.
-engine = create_engine("mysql+pymysql://<user>:<password>@localhost:3306/paintings")
+```powershell
+$env:PAINTINGS_DB_USER = "your_mysql_user"
+$env:PAINTINGS_DB_PASSWORD = "your_mysql_password"
+$env:PAINTINGS_DB_HOST = "localhost"
+$env:PAINTINGS_DB_PORT = "3306"
+$env:PAINTINGS_DB_NAME = "paintings"
+$env:PAINTINGS_DATA_DIR = "C:\path\to\archive"
 ```
 
-Ensure the expected CSV files are available at the paths configured in the script.
+**macOS/Linux shell:**
+
+```bash
+export PAINTINGS_DB_USER="your_mysql_user"
+export PAINTINGS_DB_PASSWORD="your_mysql_password"
+export PAINTINGS_DB_HOST="localhost"
+export PAINTINGS_DB_PORT="3306"
+export PAINTINGS_DB_NAME="paintings"
+export PAINTINGS_DATA_DIR="/path/to/archive"
+```
+
+Set `PAINTINGS_DATA_DIR` to the directory that contains all eight CSV files. If you place them in an `archive` directory next to the script, you can omit that variable.
 
 ### 4. Load the data
 
 ```bash
-python "creatin tables and loading data into sql.py"
+python load_paintings_data.py
 ```
 
-The script writes each CSV to a table with the same name. It uses `if_exists="replace"`, so existing tables with those names will be replaced whenever the script runs.
+The script validates required credentials and input files before connecting. It writes each CSV to a table with the same name and reports the number of rows loaded. It uses `if_exists="replace"`, which replaces an existing table each time it runs.
 
 ### 5. Run the analysis
 
@@ -81,9 +101,9 @@ Open `EDA.sql` in your SQL client and execute the queries against the `paintings
 ## Notes and limitations
 
 - The SQL uses MySQL-compatible syntax, including functions such as `REGEXP`, `TIME_TO_SEC`, `GROUP_CONCAT`, and `LIMIT`.
-- The SQL file includes a `DELETE` statement for invalid museum-hours rows. Review destructive statements and back up your data before executing them.
-- Some queries rely on assumptions about the source data. Review the joins and field meanings before using results for decision-making.
-- The loader's local file paths and database settings must be adapted before use.
+- `EDA.sql` contains a `DELETE` statement for invalid museum-hours rows. Review destructive statements and back up data before executing them.
+- Some queries rely on assumptions about the source data. Review joins and field meanings before using results for decisions.
+- The source CSV files are required to reproduce the analysis; obtain them separately if they are not committed to this repository.
 
 ## What this project demonstrates
 
